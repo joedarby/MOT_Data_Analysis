@@ -6,9 +6,13 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-def doLogReg(features, targets):
-    features_scaled = preprocessing.scale(features)
-    scaler = preprocessing.StandardScaler().fit(features)
+def doLogReg(features, targets, codeMap):
+    enc = preprocessing.OneHotEncoder(sparse=False, categorical_features=[2])
+    enc.fit(features)
+    features_encoded = enc.transform(features)
+    features_scaled = preprocessing.scale(features_encoded)
+    scaler = preprocessing.StandardScaler().fit(features_encoded)
+
 
     #output = plt.scatter(features_scaled.transpose()[0], targets.transpose())
     #plt.show()
@@ -28,9 +32,9 @@ def doLogReg(features, targets):
     #prsMatrix = np.zeros([20, 10])
     #failMatrix = np.zeros([20, 10])
     #print(model.predict_proba([[100000,3000]]))
-    for i in range(0,20):
-        for j in range(0,10):
-            passMatrix[i][j] = model.predict_proba(scaler.transform([[(i* 10000),(j*1000)]]))[0][0]
+    #for i in range(0,20):
+        #for j in range(0,10):
+            #passMatrix[i][j] = model.predict_proba(scaler.transform([[(i* 10000),(j*1000)]]))[0][0]
             #prsMatrix[i][j] = model.predict_proba(scaler.transform([[(i* 10000),(j*1000)]]))[0][1]
             #failMatrix[i][j] = model.predict_proba(scaler.transform([[(i * 10000), (j * 1000)]]))[0][2]
             #print("%s miles, %s days: %f" % (i, j, model.predict_proba([[i,j]])[0][0]))
@@ -41,17 +45,21 @@ def doLogReg(features, targets):
     X = np.arange(0,300000,10000)
     Y = np.arange(0,20000,1000)
     X, Y = np.meshgrid(X, Y)
-    plotClass(X, Y, model, scaler, 0)
+
+    makeName = "ROVER"
+    make = codeMap.get(makeName)
+
+    plotClass(X, Y, model, scaler, 0, enc, make)
     #plotClass(X, Y, model, scaler, 1)
-    plotClass(X, Y, model, scaler, 2)
+    plotClass(X, Y, model, scaler, 2, enc, make)
 
 @np.vectorize
-def getProbabilities(X,Y, model, scaler, modelClass):
-    return model.predict_proba(scaler.transform([[X, Y]]))[0][modelClass]
+def getProbabilities(X,Y, model, scaler, modelClass, enc, make):
+    return model.predict_proba(scaler.transform(enc.transform([[X, Y, make]])))[0][modelClass]
 
 
-def plotClass(X,Y, model, scaler, modelClass):
-    Z = getProbabilities(X, Y, model, scaler, modelClass)
+def plotClass(X,Y, model, scaler, modelClass, enc, make):
+    Z = getProbabilities(X, Y, model, scaler, modelClass, enc, make)
 
     fig = plt.figure()
     ax = fig.gca(projection='3d')
