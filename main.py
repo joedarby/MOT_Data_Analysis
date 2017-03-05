@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+
 import logistic
 import KN
 import MakeAndModel
@@ -17,7 +17,7 @@ df = pd.read_table('../../Documents/Data/test_result_2013_snippet.txt',
                    dtype={'TestID':np.uint32,
                                    'VehicleID':np.uint32,
                                    'Mileage':np.int32,
-                                   'VehicleClass':np.uint8,
+                                   'VehicleClass':'category',
                                    'EngineCapacity':np.uint16,
                                    'FuelType':'category',
                                    'TestType':'category',
@@ -40,7 +40,6 @@ df['TestResult'] = df['TestResult'].astype(np.uint8)
 df['VehicleAge'] = df['TestDate'] - df['DateOfManufacture']
 df['VehicleAge'] = df['VehicleAge'].dt.days.astype(np.uint32)
 df = df[df.VehicleAge < 20000]
-df['MakeCode'] = df['Make'].cat.codes
 
 #MakeAndModel.summariseMakes(df)
 
@@ -63,16 +62,48 @@ df['MakeCode'] = df['Make'].cat.codes
 #print(dfPRS.groupby(by=['Make']).Make.count())
 #print(dfFail.groupby(by=['Make']).Make.count())
 
-features = df.as_matrix(['Mileage', 'VehicleAge', 'MakeCode'])
-targets = df.as_matrix(['TestResult']).ravel()
-vehicleAges = df.as_matrix(['VehicleAge'])
-mileages = df.as_matrix(['Mileage'])
-makes = df.as_matrix(['Make'])
 
-codeMap = dict()
-makeGroups = df.groupby(['Make', 'MakeCode'])
-for group, result in makeGroups:
-    codeMap[group[0]] = group[1]
+
+
+def analyseByCategory(df, category, names):
+    codedColumnName = "%sCode" % category
+    df[codedColumnName] = df[category].cat.codes
+    features = df.as_matrix(['Mileage', 'VehicleAge', codedColumnName])
+    targets = df.as_matrix(['TestResult']).ravel()
+    codeMap = codeDictionary(df, category)
+    logistic.plotForCategories(category, names, features, targets, codeMap)
+
+def oneResult(df, features, predictor, resultType):
+    codedPredictor = predictor[:]
+    codedFeatures = features[:]
+    categoricalIndices = []
+    i = 0
+    for feature in features:
+        if(str(df[feature].dtype) == "category"):
+            codedColumnName = "%sCode" % feature
+            df[codedColumnName] = df[feature].cat.codes
+            codedFeatures[i] = codedColumnName
+            codedPredictor[i] = getCode(df, feature, predictor[i])
+            categoricalIndices.append(i)
+        i += 1
+    codedFeatures = df.as_matrix(codedFeatures)
+    targets = df.as_matrix(['TestResult']).ravel()
+    result = logistic.getSingleProbability(codedFeatures, targets, codedPredictor, categoricalIndices, resultType)
+    for i in range(len(features)):
+        print("%s: %s" % (features[i], predictor[i]))
+    print("Pass rate = %.2f%%" % (result*100))
+
+def getCode(df, category, value):
+    codeMap = dict()
+    makeGroups = df.groupby([category, ("%sCode" % category)])
+    for group, result in makeGroups:
+        codeMap[group[0]] = group[1]
+    return codeMap.get(value)
+
+#analyseByCategory(df, 'FuelType', ['E', 'P'])
+
+oneResult(df, ['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
+
 
 #print(features)
 #print(targets)
@@ -80,7 +111,6 @@ for group, result in makeGroups:
 #output = plt.scatter(makes,targets.transpose())
 #plt.show()
 
-logistic.doLogReg(features,targets, codeMap)
 #KN.doKN(features,targets)
 
 del df
