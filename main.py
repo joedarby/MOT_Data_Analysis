@@ -1,45 +1,23 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
+from ResultsData import ResultsData
 import logistic
-import KN
 import MakeAndModel
 
 np.set_printoptions(linewidth=320)
 
-testResultsHeader = ["TestID", "VehicleID", "TestDate", "VehicleClass", "TestType", "TestResult", "Mileage",
-                    "PostcodeArea", "Make", "Model", "Colour", "FuelType", "EngineCapacity", "DateOfManufacture"]
-testItemDetailHeader = ["TestID", "RfR", "RfRType", "Lat", "Long", "Vert", "DMark"]
-
-df = pd.read_table('../../Documents/Data/test_result_2013_snippet.txt',
-                   sep="|", header=None, names=testResultsHeader,
-                   dtype={'TestID':np.uint32,
-                                   'VehicleID':np.uint32,
-                                   'Mileage':np.int32,
-                                   'VehicleClass':'category',
-                                   'EngineCapacity':np.uint16,
-                                   'FuelType':'category',
-                                   'TestType':'category',
-                                   'TestResult':'category',
-                                   'PostcodeArea':'category',
-                                   'Make':'category',
-                                   'Model':'category',
-                                   'Colour':'category'},
-                   parse_dates=[2, 13])
+data = ResultsData('../../Documents/Data/test_result_2013_snippet.txt')
+data.plot_with_categorical(['Mileage', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
+data.plot_with_categorical(['VehicleAge', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
+#data.plot_with_categorical(['Mileage', 'VehicleAge', 'Make'], ['ASTON MARTIN', 'FORD'] )
+#data.plot_one_or_two_continuous(['VehicleAge'])
+#data.plot_one_or_two_continuous(['Mileage', 'VehicleAge'])
+#data.calculate_one_probability(['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
+#data.calculate_one_probability(['Mileage', 'VehicleAge'], [50000, 500], 0)
+del data
 
 
+#testItemDetailHeader = ["TestID", "RfR", "RfRType", "Lat", "Long", "Vert", "DMark"]
 
-df = df[df.Mileage < 300000]
-df['TestResult'] = pd.Categorical(df['TestResult'], categories=["P", "F", "PRS", "ABA", "ABR", "R",2,  1, 0])
-#print("P = %s" % len(testResults[testResults.TestResult == "P"]))
-#df['TestResult'] = df.TestResult.replace(to_replace=["P", "F", "PRS", "ABA", "ABR", "R"], value=["P", "F", "PRS", "F", "F", "F"])
-df['TestResult'] = df.TestResult.replace(to_replace=["P", "F", "PRS", "ABA", "ABR", "R"], value=[0,2,1,2,2,2])
-df['TestResult'] = df['TestResult'].astype(np.uint8)
-
-df['VehicleAge'] = df['TestDate'] - df['DateOfManufacture']
-df['VehicleAge'] = df['VehicleAge'].dt.days.astype(np.uint32)
-df = df[df.VehicleAge < 20000]
 
 #MakeAndModel.summariseMakes(df)
 
@@ -62,17 +40,7 @@ df = df[df.VehicleAge < 20000]
 #print(dfPRS.groupby(by=['Make']).Make.count())
 #print(dfFail.groupby(by=['Make']).Make.count())
 
-
-
-
-def analyseByCategory(df, category, names):
-    codedColumnName = "%sCode" % category
-    df[codedColumnName] = df[category].cat.codes
-    features = df.as_matrix(['Mileage', 'VehicleAge', codedColumnName])
-    targets = df.as_matrix(['TestResult']).ravel()
-    codeMap = codeDictionary(df, category)
-    logistic.plotForCategories(category, names, features, targets, codeMap)
-
+'''
 def oneResult(df, features, predictor, resultType):
     codedPredictor = predictor[:]
     codedFeatures = features[:]
@@ -102,7 +70,7 @@ def getCode(df, category, value):
 
 #analyseByCategory(df, 'FuelType', ['E', 'P'])
 
-oneResult(df, ['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
+#oneResult(df, ['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
 
 
 #print(features)
@@ -113,6 +81,4 @@ oneResult(df, ['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', '
 
 #KN.doKN(features,targets)
 
-del df
-
-
+'''

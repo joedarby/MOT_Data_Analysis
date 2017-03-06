@@ -7,84 +7,116 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from mpl_toolkits.mplot3d import Axes3D
 
+def continuous_only_plots(featureMatrix, targets, features):
+    model, scaler, enc = log_reg(featureMatrix, targets, [])
+    if (len(features) == 2):
+        ax, X, Y = build_3d_plot("%s and %s" % (features[0], features[1]))
+        plot_3d_no_cat(ax, X, Y, model, scaler, 0)
+    else:
+        x_max = np.amax(featureMatrix)
+        ax, X = build_2d_plot([features[0]], x_max)
+        plot_2d_no_cat(ax, X, model, scaler, 0)
+    plt.show()
 
-def plotForCategories(category, makeNames, features, targets, codeMap):
-    ax, X, Y = buildPlot(category)
-    (model, scaler, enc) = doLogReg(features, targets, [2])
-    for makeName in makeNames:
-        makeCode = codeMap.get(makeName)
-        plotClass(ax, X, Y, model, scaler, 0, enc, makeCode, makeName)
 
+def plot_for_categories(featureMatrix, targets, features, catsToPlot, codeMap):
+    model, scaler, enc = log_reg(featureMatrix, targets, [-1])
+    if (len(features) == 3):
+        ax, X, Y = build_3d_plot(features[-1])
+        for category in catsToPlot:
+            code = codeMap.get(category)
+            plot_cat_3d(ax, X, Y, model, scaler, 0, enc, code, category)
+    else:
+        x_max = np.amax(featureMatrix)
+        ax, X = build_2d_plot(features, x_max)
+        for category in catsToPlot:
+            code = codeMap.get(category)
+            plot_cat_2d(ax, X, model, scaler, 0, enc, code, category)
     plt.show()
 
 def getSingleProbability(features, targets, predictor, categoricalIndices, resultType):
-    (model, scaler, enc) = doLogReg(features, targets, categoricalIndices)
+    (model, scaler, enc) = log_reg(features, targets, categoricalIndices)
     return model.predict_proba(scaler.transform(enc.transform([predictor])))[0][resultType]
 
 
-def doLogReg(features, targets, catIndices):
+def log_reg(features, targets, catIndices):
+    #If catIndices is empty encoder has no effect
     enc = preprocessing.OneHotEncoder(sparse=False, categorical_features=catIndices)
     enc.fit(features)
     features_encoded = enc.transform(features)
     features_scaled = preprocessing.scale(features_encoded)
     scaler = preprocessing.StandardScaler().fit(features_encoded)
 
-
-    #output = plt.scatter(features_scaled.transpose()[0], targets.transpose())
-    #plt.show()
-
     model = LogisticRegression(random_state=None, max_iter=1000)
     model.fit(features_scaled, targets)
     print(model.classes_)
-
-    predicted = model.predict(features_scaled)
-    #print(metrics.classification_report(targets,predicted))
-    #print(metrics.confusion_matrix(targets,predicted))
     print(model)
     #print("Coefficients = ", model.coef_)
     print("Intercept = %s" % model.intercept_)
 
-    passMatrix = np.zeros([20, 10])
-    #prsMatrix = np.zeros([20, 10])
-    #failMatrix = np.zeros([20, 10])
-    #print(model.predict_proba([[100000,3000]]))
-    #for i in range(0,20):
-        #for j in range(0,10):
-            #passMatrix[i][j] = model.predict_proba(scaler.transform([[(i* 10000),(j*1000)]]))[0][0]
-            #prsMatrix[i][j] = model.predict_proba(scaler.transform([[(i* 10000),(j*1000)]]))[0][1]
-            #failMatrix[i][j] = model.predict_proba(scaler.transform([[(i * 10000), (j * 1000)]]))[0][2]
-            #print("%s miles, %s days: %f" % (i, j, model.predict_proba([[i,j]])[0][0]))
-    #print("Pass\n", passMatrix)
-    #print("\nPRS\n", prsMatrix)
-    #print("\nFail\n", failMatrix)
-
     return model, scaler, enc
 
 @np.vectorize
-def getProbabilities(X,Y, model, scaler, resultType, enc, make):
-    return model.predict_proba(scaler.transform(enc.transform([[X, Y, make]])))[0][resultType]
+def get_probabilities_with_cat(X, Y, catCode, model, scaler, resultType, enc):
+    if Y is None:
+        return model.predict_proba(scaler.transform(enc.transform([[X, catCode]])))[0][resultType]
+    else:
+        return model.predict_proba(scaler.transform(enc.transform([[X, Y, catCode]])))[0][resultType]
+
+@np.vectorize
+def get_probabilities_no_cat(X, Y, model, scaler, resultType):
+    if Y is None:
+        return model.predict_proba(scaler.transform([[X]]))[0][resultType]
+    else:
+        return model.predict_proba(scaler.transform([[X, Y]]))[0][resultType]
 
 
-def plotClass(ax, X,Y, model, scaler, modelClass, enc, makeCode, makeName):
-    Z = getProbabilities(X, Y, model, scaler, modelClass, enc, makeCode)
+def plot_cat_3d(ax, X, Y, model, scaler, modelClass, enc, catCode, makeName):
+    Z = get_probabilities_with_cat(X, Y, catCode, model, scaler, modelClass, enc)
     ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                            linewidth=0, antialiased=False)
     ax.text(-30000, -2000, Z[0][0]-0.02, makeName)
 
-def buildPlot(title):
+
+def plot_3d_no_cat(ax, X, Y, model, scaler, modelClass):
+    Z = get_probabilities_no_cat(X, Y, model, scaler, modelClass)
+    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
+                           linewidth=0, antialiased=False)
+
+def plot_cat_2d(ax, X, model, scaler, modelClass, enc, catCode, makeName):
+    Y = get_probabilities_with_cat(X, None, catCode, model, scaler, modelClass, enc)
+    ax.plot(X, Y, linewidth=0.5)
+    ax.text(0, Y[0], makeName)
+
+def plot_2d_no_cat(ax, X, model, scaler, modelClass):
+    Y = get_probabilities_no_cat(X, None, model, scaler, modelClass)
+    ax.plot(X, Y, linewidth=0.5)
+
+def build_3d_plot(categorical):
     X = np.arange(0, 300000, 10000)
     Y = np.arange(0, 20000, 1000)
     X, Y = np.meshgrid(X, Y)
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     # Customize the z axis.
-    ax.set_zlim(0.1, 0.8)
+    ax.set_zlim(0.1, 1)
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-    ax.set_xlabel("Mileage")
-    ax.set_ylabel("Age (days)")
-    ax.set_title("Pass Rate By %s" % title)
+    ax.set_xlabel('Mileage')
+    ax.set_ylabel('Age (days)')
+    ax.set_title("Pass Rate By %s" % categorical)
     return ax, X, Y
+
+def build_2d_plot(features, x_max):
+    X = np.arange(0, x_max, (x_max/60))
+    fig = plt.figure()
+    ax = fig.gca()
+    ax.set_ylim(0.1, 1)
+    ax.yaxis.set_major_locator(LinearLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    ax.set_xlabel(features[0])
+    ax.set_title("Pass Rate By %s" % features[-1])
+    return ax, X
 
 
 
