@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import logistic
+from LogRegModel import LogRegModel
 
 
 class ResultsData(object):
@@ -56,15 +56,17 @@ class ResultsData(object):
 
     def plot_one_or_two_continuous(self, features):
         featureMatrix = self.df.as_matrix(features)
-        logistic.continuous_only_plots(featureMatrix, self.targets, features)
-        return
+        model = LogRegModel(featureMatrix, self.targets, [])
+        model.continuous_only_plots(features)
+
 
     def plot_with_categorical(self, features, catsToPlot):
         codedFeatures = features[:]
         codedFeatures[-1] = self.add_coded_column(features[-1])
         codeMap = self.get_code_map(features[-1])
         featureMatrix = self.df.as_matrix(codedFeatures)
-        logistic.plot_for_categories(featureMatrix, self.targets, features, catsToPlot, codeMap)
+        model = LogRegModel(featureMatrix, self.targets, [-1])
+        model.plot_for_categories(features, catsToPlot, codeMap)
 
 
     def calculate_one_probability(self, features, predictor, resultType):
@@ -79,7 +81,8 @@ class ResultsData(object):
                 categoricalIndices.append(i)
             i += 1
         codedFeatures = self.df.as_matrix(codedFeatures)
-        result = logistic.getSingleProbability(codedFeatures, self.targets, codedPredictor, categoricalIndices, resultType)
+        model = LogRegModel(codedFeatures, self.targets, categoricalIndices)
+        result = model.getSingleProbability(codedPredictor, resultType)
         for i in range(len(features)):
             print("%s: %s" % (features[i], predictor[i]))
         print("Pass rate = %.2f%%" % (result * 100))
