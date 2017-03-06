@@ -1,20 +1,22 @@
 import numpy as np
 from ResultsData import ResultsData
-import LogRegModel
 import MakeAndModel
 
 np.set_printoptions(linewidth=320)
 
 data = ResultsData('../../Documents/Data/test_result_2013_snippet.txt')
+data.generate_model(['Mileage', 'VehicleAge', 'Make', 'FuelType', 'PostcodeArea'])
+data.calculate_one_probability([100000, 1200, 'BMW', 'P', 'B'], 0)
+data.calculate_one_probability([150000, 1200, 'BMW', 'P', 'B'], 0)
+data.calculate_one_probability([150000, 1200, 'BMW', 'E', 'B'], 0)
 
-print("Data parsed...Processing...")
 
 #data.plot_with_categorical(['Mileage', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
 #data.plot_with_categorical(['VehicleAge', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
 #data.plot_with_categorical(['Mileage', 'VehicleAge', 'Make'], ['ASTON MARTIN', 'FORD'] )
 #data.plot_one_or_two_continuous(['VehicleAge'])
 #data.plot_one_or_two_continuous(['Mileage', 'VehicleAge'])
-data.calculate_one_probability(['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
+#data.calculate_one_probability(['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
 #data.calculate_one_probability(['Mileage', 'VehicleAge'], [50000, 500], 0)
 del data
 

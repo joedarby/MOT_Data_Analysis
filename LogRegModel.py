@@ -9,7 +9,8 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class LogRegModel(object):
 
-    def __init__(self, featureMatrix, targets, catIndices):
+    def __init__(self, features, featureMatrix, targets, catIndices):
+        self.features = features
         self.featureMatrix = featureMatrix
         self.targets = targets
         self.enc = preprocessing.OneHotEncoder(sparse=False, categorical_features=catIndices)
@@ -31,25 +32,25 @@ class LogRegModel(object):
 
         return model, scaler
 
-    def continuous_only_plots(self, features):
-        if (len(features) == 2):
-            ax, X, Y = build_3d_plot("%s and %s" % (features[0], features[1]))
+    def continuous_only_plots(self):
+        if (len(self.features) == 2):
+            ax, X, Y = build_3d_plot("%s and %s" % (self.features[0], self.features[1]))
             self.plot_3d_no_cat(ax, X, Y, 0)
         else:
             x_max = np.amax(self.featureMatrix)
-            ax, X = build_2d_plot([features[0]], x_max)
+            ax, X = build_2d_plot([self.features[0]], x_max)
             self.plot_2d_no_cat(ax, X, 0)
         plt.show()
 
-    def plot_for_categories(self, features, catsToPlot, codeMap):
-        if (len(features) == 3):
-            ax, X, Y = build_3d_plot(features[-1])
+    def plot_for_categories(self, catsToPlot, codeMap):
+        if (len(self.features) == 3):
+            ax, X, Y = build_3d_plot(self.features[-1])
             for category in catsToPlot:
                 code = codeMap.get(category)
                 self.plot_cat_3d(ax, X, Y, 0, code, category)
         else:
             x_max = np.amax(self.featureMatrix)
-            ax, X = build_2d_plot(features, x_max)
+            ax, X = build_2d_plot(self.features, x_max)
             for category in catsToPlot:
                 code = codeMap.get(category)
                 self.plot_cat_2d(ax, X, 0, code, category)
@@ -59,23 +60,24 @@ class LogRegModel(object):
         return self.model.predict_proba(self.scaler.transform(self.enc.transform([predictor])))[0][resultType]
 
     def plot_cat_3d(self, ax, X, Y, modelClass, catCode, makeName):
-        Z = self.get_probabilities_with_cat(X, Y, catCode, modelClass)
+        Z = self.get_probabilities_with_cat(self, X, Y, catCode, modelClass)
         ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                         linewidth=0, antialiased=False)
         ax.text(-30000, -2000, Z[0][0] - 0.02, makeName)
 
     def plot_3d_no_cat(self, ax, X, Y, modelClass):
-        Z = self.get_probabilities_no_cat(X, Y, modelClass)
+        Z = self.get_probabilities_no_cat(self, X, Y, modelClass)
         ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                         linewidth=0, antialiased=False)
 
     def plot_cat_2d(self, ax, X, modelClass, catCode, makeName):
-        Y = self.get_probabilities_with_cat(X, None, catCode, modelClass)
+        Y = self.get_probabilities_with_cat(self, X, None, catCode, modelClass)
         ax.plot(X, Y, linewidth=0.5)
         ax.text(0, Y[0], makeName)
 
     def plot_2d_no_cat(self, ax, X, modelClass):
-        Y = self.get_probabilities_no_cat(X, None, modelClass)
+        print(modelClass)
+        Y = self.get_probabilities_no_cat(self, X, None, 0)
         ax.plot(X, Y, linewidth=0.5)
 
     @np.vectorize

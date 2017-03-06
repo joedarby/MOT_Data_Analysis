@@ -10,6 +10,7 @@ class ResultsData(object):
     def __init__(self, sourcePath):
         self.sourcePath = sourcePath
         self.df, self.targets = self.build_df()
+        self.model = None
 
     def build_df(self):
         df = pd.read_table(self.sourcePath,
@@ -54,37 +55,38 @@ class ResultsData(object):
             codeMap[group[0]] = group[1]
         return codeMap
 
-    def plot_one_or_two_continuous(self, features):
-        featureMatrix = self.df.as_matrix(features)
-        model = LogRegModel(featureMatrix, self.targets, [])
-        model.continuous_only_plots(features)
-
-
-    def plot_with_categorical(self, features, catsToPlot):
+    def generate_model(self, features):
         codedFeatures = features[:]
-        codedFeatures[-1] = self.add_coded_column(features[-1])
-        codeMap = self.get_code_map(features[-1])
-        featureMatrix = self.df.as_matrix(codedFeatures)
-        model = LogRegModel(featureMatrix, self.targets, [-1])
-        model.plot_for_categories(features, catsToPlot, codeMap)
-
-
-    def calculate_one_probability(self, features, predictor, resultType):
-        codedPredictor = predictor[:]
-        codedFeatures = features[:]
-        categoricalIndices = []
+        catIndices = []
         i = 0
         for feature in features:
-            if (str(self.df[feature].dtype) == "category"):
-                codedFeatures[i] = self.add_coded_column(feature)
-                codedPredictor[i] = self.get_code(feature, predictor[i])
-                categoricalIndices.append(i)
+            if str(self.df[feature].dtype) == "category":
+                codedFeatures[i] = self.add_coded_column(features[i])
+                catIndices.append(i)
             i += 1
-        codedFeatures = self.df.as_matrix(codedFeatures)
-        model = LogRegModel(codedFeatures, self.targets, categoricalIndices)
-        result = model.getSingleProbability(codedPredictor, resultType)
-        for i in range(len(features)):
-            print("%s: %s" % (features[i], predictor[i]))
-        print("Pass rate = %.2f%%" % (result * 100))
+        featureMatrix = self.df.as_matrix(codedFeatures)
+        self.model = LogRegModel(features, featureMatrix, self.targets, catIndices)
+
+    def plot_continuous_only(self):
+        self.model.continuous_only_plots()
+
+    def plot_with_categorical(self, catsToPlot):
+        codeMap = self.get_code_map(self.model.features[-1])
+        self.model.plot_for_categories(catsToPlot, codeMap)
+
+    def calculate_one_probability(self, predictor, resultType):
+        codedPredictor = predictor[:]
+        i = 0
+        for feature in self.model.features:
+            if str(self.df[feature].dtype) == "category":
+                codedPredictor[i] = self.get_code(feature, predictor[i])
+            i += 1
+        result = self.model.getSingleProbability(codedPredictor, resultType)
+        for i in range(len(self.model.features)):
+            print("%s: %s" % (self.model.features[i], predictor[i]), end="\t")
+        print("\nPass rate = %.2f%%" % (result * 100))
+
+
+
 
 
