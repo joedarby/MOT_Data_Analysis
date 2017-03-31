@@ -1,56 +1,55 @@
 import numpy as np
+import pandas as pd
 from ResultsData import ResultsData
-import MakeAndModel
+import CategoryAnalysis
+import Mileage
+import Age
 
 np.set_printoptions(linewidth=320)
 
-data = ResultsData('../../Documents/Data/test_result_2013_snippet.txt')
-data.generate_model(['Mileage', 'VehicleAge', 'Make', 'FuelType', 'PostcodeArea'])
-data.calculate_one_probability([100000, 1200, 'BMW', 'P', 'B'], 0)
-data.calculate_one_probability([150000, 1200, 'BMW', 'P', 'B'], 0)
-data.calculate_one_probability([150000, 1200, 'BMW', 'E', 'B'], 0)
+'''Generate a dataframe from the subset data file'''
+data = ResultsData('../../Documents/Data/test_result_2013_subset.txt')
 
 
-#data.plot_with_categorical(['Mileage', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
-#data.plot_with_categorical(['VehicleAge', 'Make'], ['ASTON MARTIN', 'AUDI', 'ROVER'])
-#data.plot_with_categorical(['Mileage', 'VehicleAge', 'Make'], ['ASTON MARTIN', 'FORD'] )
-#data.plot_one_or_two_continuous(['VehicleAge'])
-#data.plot_one_or_two_continuous(['Mileage', 'VehicleAge'])
-#data.calculate_one_probability(['Mileage', 'VehicleAge', 'FuelType', 'Make'], [50000, 500, 'P', 'ROVER'], 0)
-#data.calculate_one_probability(['Mileage', 'VehicleAge'], [50000, 500], 0)
-del data
+'''Code to produce report is shown below (delete '#' to activate code as necessary)'''
 
 
-#testItemDetailHeader = ["TestID", "RfR", "RfRType", "Lat", "Long", "Vert", "DMark"]
+'''Code to analyse data by continuous variables (mileage and age)'''
+#Mileage.analyse_mileage(data.df)
+#Age.analyse_age(data.df)
+
+'''Code to produce tables in the report which summarise the data by categorical features'''
+#CategoryAnalysis.summarise(data.df, 'MakeModel', 100)
+#CategoryAnalysis.summarise(data.df, 'FuelType', 100)
+#CategoryAnalysis.summarise(data.df, 'Make', 100)
+#CategoryAnalysis.summarise(data.df, 'VehicleClass', 100)
+#CategoryAnalysis.summarise(data.df, 'Colour', 500)
 
 
-#MakeAndModel.summariseMakes(df)
+'''Report model 1'''
+#data.generate_model(['Mileage'])
+#data.plot_continuous_only()
 
-#print(testResults['TestResult'].dtypes)
-#print(df.head(10)['VehicleAge'])
-#print(df.dtypes)
-#print(testResults.memory_usage().sum())
+'''Report model 2'''
+#data.generate_model(['VehicleAge'])
+#data.plot_continuous_only()
 
-#dfpass = df[df.TestResult == 0]
-#df2 = df2[df2.Mileage > 40000]
+'''Report model 3'''
+#data.generate_model(['Mileage', 'VehicleAge'])
+#data.plot_continuous_only()
 
-#dfPRS = df[df.TestResult == 0]
-#df3 = df3[df.Mileage < 60000]
+'''Report model 4'''
+#data.generate_model(['Mileage', 'VehicleClass'])
+#data.plot_with_categorical(['1','2','3','4','5','7'])
 
-#dfFail = df[df.TestResult == 0]
+'''Report model 5'''
+#data.generate_model(['VehicleAge', 'Make'])
+#data.plot_with_categorical(['ASTON MARTIN', 'PORSCHE', 'SKODA', 'RENAULT'])
 
-#df = pd.concat([df2,df3])
-
-#print(dfpass.groupby(by=['Make']).count() > 10)
-#print(dfPRS.groupby(by=['Make']).Make.count())
-#print(dfFail.groupby(by=['Make']).Make.count())
-
-'''
+'''Report model 6'''
+#data.generate_model(['Mileage', 'VehicleAge', 'FuelType'])
+#data.plot_with_categorical(['E', 'P'])
 
 
-#output = plt.scatter(makes,targets.transpose())
-#plt.show()
 
-#KN.doKN(features,targets)
 
-'''
